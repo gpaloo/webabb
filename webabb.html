@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webabb 3D</title>
+    <style>
+        :root {
+            --meat-color: #8b3a0e;
+            --meat-fat: #b05722;
+            --meat-burnt: #4a1d04;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #fff;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            margin-top: 20px;
+            color: #f4c28d;
+            text-shadow: 2px 2px 4px #000;
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+        }
+        
+        p.subtitle {
+            margin-top: 0;
+            color: #aaa;
+            font-size: 1.1rem;
+        }
+
+        /* 3D Scene and Webabb */
+        #scene {
+            perspective: 1000px;
+            margin-top: 30px;
+            width: 300px;
+            height: 400px;
+            position: relative;
+        }
+
+        #spit {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 450px;
+            background: linear-gradient(to right, #777, #ccc, #777);
+            border-radius: 5px;
+            z-index: 1;
+        }
+
+        #webabb {
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            animation: spin 6s linear infinite;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        @keyframes spin {
+            from { transform: rotateY(0deg); }
+            to { transform: rotateY(360deg); }
+        }
+
+        /* HTML elements forming the meat */
+        .meat-layer {
+            margin: -4px 0;
+            background: linear-gradient(45deg, var(--meat-color), var(--meat-fat), var(--meat-burnt));
+            color: #f4c28d;
+            border: 2px solid var(--meat-burnt);
+            border-radius: 50%;
+            text-align: center;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 5px 10px rgba(0,0,0,0.5);
+            font-size: 10px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Shaving Machine */
+        #shaver {
+            position: absolute;
+            right: 20px;
+            top: -20px;
+            width: 40px;
+            height: 120px;
+            background: linear-gradient(to right, #444, #888, #444);
+            border-radius: 10px;
+            box-shadow: -5px 10px 15px rgba(0,0,0,0.7);
+            transition: top 2s ease-in-out;
+            display: none;
+            z-index: 10;
+        }
+        
+        #shaver::before {
+            content: '';
+            position: absolute;
+            left: -10px;
+            top: 20px;
+            width: 10px;
+            height: 80px;
+            background: silver;
+            border-radius: 5px 0 0 5px;
+        }
+
+        /* Tray */
+        #tray {
+            width: 450px;
+            height: 60px;
+            background: radial-gradient(ellipse at center, #555 0%, #222 100%);
+            border-radius: 50%;
+            margin-top: -10px;
+            box-shadow: inset 0 -10px 20px rgba(0,0,0,0.8), 0 10px 20px rgba(0,0,0,0.6);
+            z-index: 0;
+            position: relative;
+        }
+
+        /* Falling HTML Chunks */
+        .falling-chunk {
+            position: absolute;
+            background: #fff;
+            color: #000;
+            padding: 5px 10px;
+            border-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            font-size: 12px;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 20;
+            animation: fall 0.8s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translateY(350px) rotate(360deg) scale(0.5); opacity: 0; }
+        }
+
+        /* Controls */
+        .controls {
+            margin: 40px 0;
+            z-index: 10;
+        }
+
+        #btn-shave {
+            background: linear-gradient(to bottom, #ff416c, #ff4b2b);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 65, 108, 0.4);
+            transition: transform 0.1s, box-shadow 0.1s, background 0.3s;
+        }
+
+        #btn-shave:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 10px rgba(255, 65, 108, 0.4);
+        }
+        #btn-shave:disabled {
+            background: #555;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Assembled Web App */
+        #assembled-page {
+            width: 80%;
+            max-width: 800px;
+            min-height: 300px;
+            background: #fdfdfd;
+            color: #333;
+            padding: 30px;
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+            margin-top: 20px;
+            border-top: 5px solid #ff4b2b;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-sizing: border-box;
+        }
+
+        #assembled-page.empty::before {
+            content: 'Shaved HTML chunks will fall here to build your random Web App...';
+            color: #aaa;
+            font-style: italic;
+            text-align: center;
+            margin-top: 100px;
+        }
+
+        /* Generic styles for the randomized injected elements */
+        .assembled-element {
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            opacity: 0;
+            transform: translateY(20px);
+            width: 100%;
+        }
+
+        @keyframes popIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Internal styling for the generated content to look decent */
+        .random-card { background: #fff; border: 1px solid #eee; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .random-btn { background: #333; color: #fff; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        .random-input { padding: 10px; border: 1px solid #ccc; border-radius: 4px; width: 100%; max-width: 300px; box-sizing: border-box; }
+        .random-img { width: 100%; max-width: 400px; height: 150px; background: #ddd; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #888; font-weight: bold; }
+        .random-tag { display: inline-block; background: #e0e0e0; padding: 4px 8px; border-radius: 12px; font-size: 12px; margin-right: 5px; }
+
+    </style>
+</head>
+<body>
+
+    <h1>Webabb 3D</h1>
+    <p class="subtitle">Shave the HTML elements to cook a unique Web App!</p>
+
+    <div id="scene">
+        <div id="spit"></div>
+        <div id="webabb">
+            <!-- Meat layers injected by JS -->
+        </div>
+        <div id="shaver"></div>
+    </div>
+    
+    <div id="tray"></div>
+
+    <div class="controls">
+        <button id="btn-shave" onclick="shaveWebabb()">Shave the Webabb!</button>
+    </div>
+
+    <!-- Container for the random assembled site -->
+    <div id="assembled-page" class="empty"></div>
+
+    <script>
+        const webabbContainer = document.getElementById('webabb');
+        const elementsTypes = ['button', 'input', 'progress', 'div', 'select'];
+        const TOTAL_LAYERS = 45;
+
+        // Generate the 3D Webabb shape
+        for (let i = 0; i < TOTAL_LAYERS; i++) {
+            let widthBase = 180;
+            if (i < 10) widthBase = 120 + (i * 6); 
+            else if (i > 35) widthBase = 200 - ((i - 35) * 8); 
+            else widthBase = 180 + Math.sin(i / 3) * 15; 
+            
+            const width = widthBase + (Math.random() * 10 - 5);
+            
+            const tag = elementsTypes[i % elementsTypes.length];
+            const el = document.createElement(tag);
+            
+            el.className = 'meat-layer';
+            el.style.width = width + 'px';
+            el.style.height = '18px';
+            el.style.transform = `rotateX(${Math.random() * 10 - 5}deg) rotateZ(${Math.random() * 10 - 5}deg)`;
+            
+            if (tag === 'button') el.innerText = 'MEAT';
+            if (tag === 'input') { el.type = 'text'; el.value = 'Crispy HTML'; el.disabled = true; }
+            if (tag === 'progress') { el.value = Math.random(); el.max = 1; }
+            if (tag === 'select') { el.innerHTML = '<option>Onion</option><option>Spicy Sauce</option>'; el.disabled = true; }
+            
+            webabbContainer.appendChild(el);
+        }
+
+        // A large pool of random HTML chunks to ensure a different page layout every time
+        const htmlPool = [
+            { label: '&lt;h1&gt;', code: '<h1 style="color: #ff4b2b; margin:0;">Dynamic Webabb Title</h1>' },
+            { label: '&lt;h2&gt;', code: '<h2 style="color: #333; margin:0 0 10px 0;">Spicy Subheading</h2>' },
+            { label: '&lt;p&gt;', code: '<p style="color: #666; line-height: 1.6; margin:0;">This paragraph was procedurally sliced from the main spit. It contains rich, juicy data attributes and zero artificial styles.</p>' },
+            { label: '&lt;button&gt;', code: '<button class="random-btn" onclick="alert(\'Crispy interaction!\')">Click for extra sauce</button>' },
+            { label: '&lt;input&gt;', code: '<input type="text" class="random-input" placeholder="Search the menu...">' },
+            { label: '&lt;img&gt;', code: '<div class="random-img">Random Image Placeholder</div>' },
+            { label: '&lt;ul&gt;', code: '<ul style="background:#f5f5f5; padding:20px 40px; border-radius:8px; margin:0;"><li>Frontend Piadina</li><li>Backend Falafel</li><li>API Yogurt Sauce</li></ul>' },
+            { label: '&lt;div&gt;', code: '<div class="random-card"><h3 style="margin-top:0;">User Profile</h3><p style="margin-bottom:0;">Logged in as: <strong>Admin_Kebab</strong></p></div>' },
+            { label: '&lt;blockquote&gt;', code: '<blockquote style="border-left: 4px solid #ff4b2b; padding-left: 15px; margin: 0; font-style: italic; color: #555;">"The best web apps are roasted slowly on a vertical spit." - Web Developer</blockquote>' },
+            { label: '&lt;span&gt;', code: '<div><span class="random-tag">#html5</span><span class="random-tag">#css3</span><span class="random-tag">#tasty</span></div>' },
+            { label: '&lt;progress&gt;', code: '<div style="display:flex; flex-direction:column; gap:5px;"><label style="font-size:12px; font-weight:bold;">Roasting Progress</label><progress value="' + Math.random() + '" max="1" style="width:100%;"></progress></div>' },
+            { label: '&lt;table&gt;', code: '<table style="width:100%; border-collapse: collapse; text-align:left;"><tr style="border-bottom:1px solid #ddd;"><th>Item</th><th>Price</th></tr><tr><td>Webabb Wrap</td><td>$5.99</td></tr><tr><td>Full Stack Plate</td><td>$12.50</td></tr></table>' }
+        ];
+
+        let isShaving = false;
+        let elementsCount = 0;
+
+        function shaveWebabb() {
+            if (isShaving) return;
+            isShaving = true;
+
+            const btn = document.getElementById('btn-shave');
+            const shaver = document.getElementById('shaver');
+            const scene = document.getElementById('scene');
+            const assembledPage = document.getElementById('assembled-page');
+            
+            btn.disabled = true;
+            btn.innerText = "Shaving...";
+            shaver.style.display = 'block';
+            
+            // Bring shaver down
+            setTimeout(() => {
+                shaver.style.top = '250px';
+            }, 50);
+
+            // Randomly select an HTML chunk from the pool
+            const randomIndex = Math.floor(Math.random() * htmlPool.length);
+            const selectedChunk = htmlPool[randomIndex];
+            
+            // Create falling particle effects
+            for(let i = 0; i < 4; i++) {
+                setTimeout(() => {
+                    const falling = document.createElement('div');
+                    falling.className = 'falling-chunk';
+                    falling.innerHTML = selectedChunk.label; 
+                    
+                    falling.style.top = (50 + i * 40) + 'px';
+                    falling.style.left = '200px'; 
+                    
+                    // Add a tiny random horizontal offset for realism
+                    falling.style.transform = `translateX(${Math.random() * 40 - 20}px)`;
+                    
+                    scene.appendChild(falling);
+
+                    setTimeout(() => {
+                        falling.remove();
+                    }, 800);
+                    
+                }, 400 + (i * 200)); 
+            }
+
+            // Assemble the random piece into the page
+            setTimeout(() => {
+                if (elementsCount === 0) {
+                    assembledPage.classList.remove('empty');
+                }
+
+                const newElement = document.createElement('div');
+                newElement.className = 'assembled-element';
+                newElement.innerHTML = selectedChunk.code;
+                assembledPage.appendChild(newElement);
+
+                elementsCount++;
+                
+                // Bring shaver back up
+                shaver.style.top = '-20px';
+                
+                setTimeout(() => {
+                    shaver.style.display = 'none';
+                    btn.disabled = false;
+                    btn.innerText = "Shave more HTML!";
+                    isShaving = false;
+                    
+                    // Auto-scroll to the bottom of the generated page so user sees new elements
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                }, 500);
+
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
